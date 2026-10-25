@@ -213,7 +213,6 @@ void displayLevelOrder(BTreeNode* root)
     cout << "END" << endl;
 }
 
-// --- DELETION---
 // ---------------- DELETION HELPERS ----------------
 
 void borrowFromPrevious(BTreeNode* parent, int index) {
@@ -273,7 +272,7 @@ void borrowFromNext(BTreeNode* parent, int index) {
     --sibling->count;
 }
 
-// Merge child[index], the parent separator, and child[index + 1].
+// Merge left and right child to left node and delete the right node entirely
 void mergeChildren(BTreeNode* parent, int index) {
     BTreeNode* left = parent->children[index];
     BTreeNode* right = parent->children[index + 1];
@@ -339,31 +338,32 @@ void deleteFromNode(BTreeNode* node, int value) {
     if (index < node->count &&
         node->key[index] == value) {
 
-        // Case 1a: Key is in a leaf.
+        // Case 1a: Key is in a leaf node
         if (isLeaf(node)) {
             for (int j = index + 1; j < node->count; ++j)
+            {
                 node->key[j - 1] = node->key[j];
-
-            --node->count;
+            }
+            --(node->count);
             return;
         }
 
         BTreeNode* left = node->children[index];
         BTreeNode* right = node->children[index + 1];
 
-        // Case 1b: Use predecessor if left can lend.
+        // Case 1b: Use predecessor if left can lend
         if (left->count > MIN_KEYS) {
             int predecessor = getPredecessor(left);
             node->key[index] = predecessor;
             deleteFromNode(left, predecessor);
         }
-        // Otherwise, use successor if right can lend.
+        // Use successor if right can lend
         else if (right->count > MIN_KEYS) {
             int successor = getSuccessor(right);
             node->key[index] = successor;
             deleteFromNode(right, successor);
         }
-        // Neither can lend: merge with the separator.
+        // Neither can lend, merge
         else {
             mergeChildren(node, index);
             deleteFromNode(node->children[index], value);
@@ -373,26 +373,21 @@ void deleteFromNode(BTreeNode* node, int value) {
     }
 
     // Case 2: The key is not in this node.
-    // Public deleteKey checks presence before modifying the tree.
-    if (isLeaf(node))
-        return;
-
-    // Prepare the child before descending.
     if (node->children[index]->count == MIN_KEYS) {
 
-        // Priority 1: borrow from the left sibling.
+        // Borrow from the left sibling
         if (index > 0 &&
             node->children[index - 1]->count > MIN_KEYS) {
 
             borrowFromPrevious(node, index);
         }
-        // Priority 2: borrow from the right sibling.
+        // Borrow from the right sibling
         else if (index < node->count &&
                  node->children[index + 1]->count > MIN_KEYS) {
 
             borrowFromNext(node, index);
         }
-        // Priority 3: merge with the right if it exists.
+        // Merge with right if present
         else if (index < node->count) {
             mergeChildren(node, index);
         }
@@ -413,8 +408,8 @@ bool deleteKey(BTreeNode*& root, int value) {
 
     deleteFromNode(root, value);
 
-    // Replace an empty root with its only child,
-    // or make the tree empty if the root was a leaf.
+    // Replace an empty root with its only child or 
+    // make the tree empty if the root was a leaf.
     if (root != nullptr && root->count == 0) {
         BTreeNode* oldRoot = root;
 
@@ -447,7 +442,40 @@ int main()
         cin >> key;
         insert(root, key);
     }
+    int q;
+    cin>>q;
 
-    displayLevelOrder(root);
+    for(int i=0;i<q;i++)
+    {
+        int type;
+        cin >> type;
+
+        if (type == 4) {
+            displayLevelOrder(root);
+            continue;
+        }
+        int value;
+        cin >> value;
+
+        if (type == 1) {
+            if (search(root, value))
+                cout << value << " is present\n";
+            else
+                cout << value << " is not present\n";
+        }
+        else if (type == 2) {
+            if (insert(root, value))
+                cout << value << " is inserted\n";
+            else
+                cout << value << " is already present\n";
+        }
+        else if (type == 3) {
+            if (deleteKey(root, value))
+                cout << value << " is deleted\n";
+            else
+                cout << value
+                     << " is not present. So it can not be deleted\n";
+        }
+    }
 
 }
